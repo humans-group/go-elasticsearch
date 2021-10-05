@@ -2,8 +2,9 @@ package es
 
 import (
 	"context"
+	"net/http"
 
-	"github.com/elastic/go-elasticsearch/v7/esapi"
+	"github.com/elastic/go-elasticsearch/v7/estransport"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
@@ -16,23 +17,24 @@ const (
 	errLogValueErr      = "error"
 )
 
-func newSearchFuncWithTracing(searchFunc esapi.Search) esapi.Search {
-	return func(o ...func(*esapi.SearchRequest)) (*esapi.Response, error) {
+type EsTransportWithTracing struct {
+	EsTransport estransport.Interface
+}
 
-		// todo: get context from prepared request?
-		ctx := context.Background()
+func (t EsTransportWithTracing) Perform(r *http.Request) (*http.Response, error) {
 
-		span, _ := startSpan(ctx, operationNameSearch)
-		r, err := searchFunc(o...)
+	ctx := r.Context()
+	span, spanCtx := startSpan(ctx, operationNameSearch)
+	defer span.Finish()
+	defer spanCtx.Done()
 
-		if err != nil {
-			traceErr(err, span)
-		}
+	resp, err := t.Perform(r)
 
-		span.Finish()
-
-		return r, err
+	if err != nil {
+		traceErr(err, span)
 	}
+
+	return resp, err
 }
 
 func traceErr(err error, span opentracing.Span) {

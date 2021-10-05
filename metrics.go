@@ -1,11 +1,13 @@
 package es
 
 import (
+	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v7/esapi"
-
+	"github.com/elastic/go-elasticsearch/v7/estransport"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -14,58 +16,51 @@ var clientDurationSummary *prometheus.SummaryVec
 func init() {
 	clientDurationSummary = prometheus.NewSummaryVec(
 		prometheus.SummaryOpts{
-			Name: "search_operations_durations_seconds",
-			Help: "search_operations_durations_seconds",
+			Name: "es_search_operations_durations_seconds",
+			Help: "es_search_operations_durations_seconds",
 		},
-		[]string{"client_name", "method"},
+		[]string{"client_name", "operation", "status", "resp_code"},
 	)
 
 	prometheus.MustRegister(clientDurationSummary)
 }
 
-func newSearchFuncWithMetrics(searchFunc esapi.Search) esapi.Search {
-	return func(o ...func(*esapi.SearchRequest)) (*esapi.Response, error) {
-		start := time.Now()
-
-		r, err := searchFunc(o...)
-
-		duration := time.Since(start)
-		clientDurationSummary.WithLabelValues("ES", "search").Observe(duration.Seconds())
-
-		return r, err
-	}
+type EsTransportWithMetrics struct {
+	EsTransport estransport.Interface
 }
 
-//func (ta *metricsAdapter) observe(method string, startedAt time.Time) {
-//	duration := time.Since(startedAt)
-//	clientDurationSummary.WithLabelValues(ta.name, method).Observe(duration.Seconds())
-//}
+func (t EsTransportWithMetrics) Perform(r *http.Request) (*http.Response, error) {
+	start := time.Now()
 
-// prometheusCollector exports metrics from db.DBStats as prometheus` gauges.
+	resp, err := t.Perform(r)
+
+	status := "ok"
+	if err != nil {
+		status = "error"
+	}
+
+	operation := "search"
+	if !strings.Contains(r.URL.Path, "_search") {
+		operation = "other"
+	}
+
+	respCode := 0
+	if resp != nil {
+		respCode = resp.StatusCode
+	}
+
+	duration := time.Since(start)
+	clientDurationSummary.WithLabelValues(
+		"ES", operation, status, strconv.Itoa(respCode)).Observe(duration.Seconds())
+
+	return resp, err
+}
+
+// prometheusCollector exports metrics as prometheus gauges.
 type prometheusCollector struct {
 	mu             sync.RWMutex
 	searchRequests *prometheus.Desc
 }
-
-//var errAlreadyRegistered = errors.New("already registered")
-
-// register adds connection to pool. Returns an error on duplicate pool name.
-//func (pc *prometheusCollector) register(name string, conn *pgxpool.Pool) error {
-//	if name == "" {
-//		name = "default"
-//	}
-//
-//	pc.mu.Lock()
-//	defer pc.mu.Unlock()
-//
-//	if _, exists := pc.dbs[name]; exists {
-//		return errAlreadyRegistered
-//	}
-//
-//	pc.dbs[name] = conn
-//
-//	return nil
-//}
 
 var collector *prometheusCollector
 
