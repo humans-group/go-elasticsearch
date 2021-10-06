@@ -20,14 +20,27 @@ func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 	}
 
 	client, err = elasticsearch.NewClient(cfg)
+	if err != nil {
+		return nil, err
+	}
 
 	if serviceEsCfg.Tracing {
 		client.Transport = EsTransportWithTracing{EsTransport: client.Transport}
 	}
 
 	if serviceEsCfg.Metrics {
-		client.Transport = EsTransportWithMetrics{EsTransport: client.Transport}
+		client.Transport = EsTransportWithMetrics{
+			Name:        serviceEsCfg.Name,
+			EsTransport: client.Transport}
 	}
 
-	return client, err
+	return client, nil
+}
+
+func MustNew(serviceEsCfg Config) (*elasticsearch.Client, error) {
+	client, err := NewClient(serviceEsCfg)
+	if err != nil {
+		panic(err)
+	}
+	return client, nil
 }

@@ -1,7 +1,6 @@
 package es
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v7/estransport"
@@ -24,7 +23,9 @@ type EsTransportWithTracing struct {
 func (t EsTransportWithTracing) Perform(r *http.Request) (*http.Response, error) {
 
 	ctx := r.Context()
-	span, spanCtx := startSpan(ctx, operationNameSearch)
+	span, spanCtx := opentracing.StartSpanFromContext(ctx, operationNameSearch)
+	ext.SpanKind.Set(span, "es_client")
+	ext.HTTPMethod.Set(span, string(r.Method))
 	defer span.Finish()
 	defer spanCtx.Done()
 
@@ -43,9 +44,4 @@ func traceErr(err error, span opentracing.Span) {
 		log.String(errLogKeyEvent, errLogValueErr),
 		log.String(errLogKeyMessage, err.Error()),
 	)
-}
-
-func startSpan(ctx context.Context, name string) (opentracing.Span, context.Context) {
-	span, spanCtx := opentracing.StartSpanFromContext(ctx, name)
-	return span, spanCtx
 }
