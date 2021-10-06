@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	StatusOk    = "ok"
-	StatusError = "error"
+	statusOk    = "ok"
+	statusError = "error"
 )
 
 var clientDurationSummary *prometheus.SummaryVec
@@ -38,9 +38,9 @@ func (t EsTransportWithMetrics) Perform(r *http.Request) (*http.Response, error)
 
 	resp, err := t.Perform(r)
 
-	status := StatusOk
+	status := statusOk
 	if err != nil {
-		status = StatusError
+		status = statusError
 	}
 
 	// operation will include index name, document type and operation itself
