@@ -25,13 +25,17 @@ func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 	}
 
 	if serviceEsCfg.Tracing {
-		client.Transport = EsTransportWithTracing{EsTransport: client.Transport}
+		client.Transport = EsTransportWithTracing{
+			Name:        serviceEsCfg.Name,
+			EsTransport: client.Transport,
+		}
 	}
 
 	if serviceEsCfg.Metrics {
 		client.Transport = EsTransportWithMetrics{
 			Name:        serviceEsCfg.Name,
-			EsTransport: client.Transport}
+			EsTransport: client.Transport,
+		}
 	}
 
 	return client, nil
