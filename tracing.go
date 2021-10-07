@@ -35,7 +35,7 @@ func (t EsTransportWithTracing) Perform(r *http.Request) (*http.Response, error)
 	defer span.Finish()
 	defer spanCtx.Done()
 
-	resp, err := t.Perform(r)
+	resp, err := t.EsTransport.Perform(r)
 
 	if err != nil {
 		traceErr(err, span)

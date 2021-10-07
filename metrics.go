@@ -36,7 +36,7 @@ type EsTransportWithMetrics struct {
 func (t EsTransportWithMetrics) Perform(r *http.Request) (*http.Response, error) {
 	start := time.Now()
 
-	resp, err := t.Perform(r)
+	resp, err := t.EsTransport.Perform(r)
 
 	status := statusOk
 	if err != nil {
