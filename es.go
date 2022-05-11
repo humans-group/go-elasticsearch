@@ -10,6 +10,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 )
 
+type Client = elasticsearch.Client
+
 // Returning standard Client from elasticsearch package but with modified transport
 func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 	var client *elasticsearch.Client
