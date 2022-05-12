@@ -22,28 +22,28 @@ func (e Error) Error() string {
 }
 
 func ExtractError(res *esapi.Response) error {
-	if res.IsError() {
-		var raw map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
-			return fmt.Errorf("Failure to parse response body: %w", err)
-		} else {
-
-			typ, ok := raw["error"].(map[string]interface{})["type"].(string)
-			if !ok {
-				return fmt.Errorf("Failure to parse type to string")
-			}
-
-			reason, ok := raw["error"].(map[string]interface{})["reason"].(string)
-			if !ok {
-				return fmt.Errorf("Failure to parse reason to string")
-			}
-
-			return Error{
-				StatusCode: res.StatusCode,
-				Type:       typ,
-				Reason:     reason,
-			}
-		}
+	if !res.IsError() {
+		return nil
 	}
-	return nil
+
+	var raw map[string]interface{}
+	if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
+		return fmt.Errorf("Failure to parse response body: %w", err)
+	}
+
+	typ, ok := raw["error"].(map[string]interface{})["type"].(string)
+	if !ok {
+		return fmt.Errorf("Failure to parse type to string")
+	}
+
+	reason, ok := raw["error"].(map[string]interface{})["reason"].(string)
+	if !ok {
+		return fmt.Errorf("Failure to parse reason to string")
+	}
+
+	return Error{
+		StatusCode: res.StatusCode,
+		Type:       typ,
+		Reason:     reason,
+	}
 }
