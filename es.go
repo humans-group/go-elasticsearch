@@ -2,6 +2,7 @@
 This package is an entry point in the same way as package elasticsearch in the official go client.
 Different name is chosen to avoid corresponding warning.
 Acquiring client is different only in package name and type of passed Config struct:
+
 	esClient, err := es.NewClient(es.Config{})
 */
 package es
@@ -17,6 +18,8 @@ func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 
 	cfg := elasticsearch.Config{
 		Addresses: serviceEsCfg.Addresses,
+		Username:  serviceEsCfg.Username,
+		Password:  serviceEsCfg.Password,
 	}
 
 	client, err = elasticsearch.NewClient(cfg)
