@@ -8,11 +8,13 @@ Acquiring client is different only in package name and type of passed Config str
 package es
 
 import (
+	"net/http"
+
 	"github.com/elastic/go-elasticsearch/v7"
 )
 
 // Returning standard Client from elasticsearch package but with modified transport
-func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
+func NewClient(serviceEsCfg Config, transport http.RoundTripper) (*elasticsearch.Client, error) {
 	var client *elasticsearch.Client
 	var err error
 
@@ -20,6 +22,10 @@ func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 		Addresses: serviceEsCfg.Addresses,
 		Username:  serviceEsCfg.Username,
 		Password:  serviceEsCfg.Password,
+	}
+
+	if transport != nil {
+		cfg.Transport = transport
 	}
 
 	client, err = elasticsearch.NewClient(cfg)
@@ -45,7 +51,15 @@ func NewClient(serviceEsCfg Config) (*elasticsearch.Client, error) {
 }
 
 func MustNew(serviceEsCfg Config) (*elasticsearch.Client, error) {
-	client, err := NewClient(serviceEsCfg)
+	client, err := NewClient(serviceEsCfg, nil)
+	if err != nil {
+		panic(err)
+	}
+	return client, nil
+}
+
+func MustNewWithTransport(serviceEsCfg Config, transport *http.Transport) (*elasticsearch.Client, error) {
+	client, err := NewClient(serviceEsCfg, transport)
 	if err != nil {
 		panic(err)
 	}
